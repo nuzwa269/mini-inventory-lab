@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Mini Inventory Lab - Smart Stock & Inventory Tracker with real-time analytics, stock adjustment, and low-stock alerts.">
+    <meta name="theme-color" content="#4F46E5">
+    <title>Mini Inventory Lab | Smart Stock & Inventory Tracker</title>
+
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome 6 Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Application Styles -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- Top Header -->
+    <header class="app-header">
+        <div class="brand">
+            <div class="brand-badge">
+                <i class="fa-solid fa-boxes-stacked brand-icon"></i>
+            </div>
+            <div class="brand-text">
+                <h1>Mini Inventory Lab</h1>
+                <span class="brand-subtitle">Smart Stock &amp; Inventory Management</span>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button type="button" class="btn btn-outline" id="btn-export-data" aria-label="Export Data">
+                <i class="fa-solid fa-file-export"></i> <span>Export</span>
+            </button>
+            <button type="button" class="btn btn-outline btn-subtle" id="btn-reset-data" aria-label="Reset Demo Data">
+                <i class="fa-solid fa-rotate-right"></i> <span>Demo Data</span>
+            </button>
+            <button type="button" class="btn btn-primary" id="btn-add-product" aria-label="Add New Product">
+                <i class="fa-solid fa-plus"></i> <span>Add Product</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="app-container">
+
+        <!-- Low Stock Alert Banner -->
+        <div id="low-stock-banner" class="alert-banner alert-warning hidden" role="alert" aria-live="assertive">
+            <div class="banner-content">
+                <i class="fa-solid fa-triangle-exclamation banner-icon"></i>
+                <span>Attention: <strong id="low-stock-count">0</strong> product(s) have reached low stock threshold!</span>
+            </div>
+            <div class="banner-actions">
+                <button type="button" class="btn btn-sm btn-warning" id="btn-view-low-stock">
+                    View Low Stock
+                </button>
+                <button type="button" class="icon-btn" id="btn-close-banner" aria-label="Dismiss banner">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Summary Dashboard -->
+        <section class="dashboard-grid" aria-labelledby="dashboard-heading">
+            <h2 id="dashboard-heading" class="visually-hidden">Summary Dashboard</h2>
+            
+            <!-- Metric 1: Total Products -->
+            <article class="metric-card">
+                <div class="metric-icon bg-indigo">
+                    <i class="fa-solid fa-box-archive"></i>
+                </div>
+                <div class="metric-info">
+                    <span class="metric-label">Total Products</span>
+                    <h3 class="metric-value" id="metric-total-products">0</h3>
+                </div>
+            </article>
+
+            <!-- Metric 2: Total Units -->
+            <article class="metric-card">
+                <div class="metric-icon bg-emerald">
+                    <i class="fa-solid fa-cubes"></i>
+                </div>
+                <div class="metric-info">
+                    <span class="metric-label">Total Units on Hand</span>
+                    <h3 class="metric-value" id="metric-total-units">0</h3>
+                </div>
+            </article>
+
+            <!-- Metric 3: Total Value -->
+            <article class="metric-card">
+                <div class="metric-icon bg-blue">
+                    <i class="fa-solid fa-dollar-sign"></i>
+                </div>
+                <div class="metric-info">
+                    <span class="metric-label">Inventory Valuation</span>
+                    <h3 class="metric-value" id="metric-total-value">$0.00</h3>
+                </div>
+            </article>
+
+            <!-- Metric 4: Low Stock Alerts -->
+            <article class="metric-card metric-card-alert" id="metric-card-low-stock">
+                <div class="metric-icon bg-rose">
+                    <i class="fa-solid fa-bell"></i>
+                </div>
+                <div class="metric-info">
+                    <span class="metric-label">Low Stock Alerts</span>
+                    <h3 class="metric-value" id="metric-low-stock">0</h3>
+                </div>
+            </article>
+        </section>
+
+        <!-- Search & Filter Controls -->
+        <section class="controls-bar" aria-label="Search and Filter">
+            <div class="search-wrapper">
+                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                <input type="search" id="search-input" class="search-input" placeholder="Search by name, SKU, or category..." aria-label="Search products">
+            </div>
+
+            <div class="filters-group">
+                <div class="filter-select-wrapper">
+                    <select id="category-filter" class="custom-select" aria-label="Filter by category">
+                        <option value="all">All Categories</option>
+                    </select>
+                </div>
+
+                <div class="filter-select-wrapper">
+                    <select id="status-filter" class="custom-select" aria-label="Filter by stock status">
+                        <option value="all">All Status</option>
+                        <option value="in-stock">In Stock</option>
+                        <option value="low-stock">Low Stock</option>
+                        <option value="out-of-stock">Out of Stock</option>
+                    </select>
+                </div>
+
+                <div class="filter-select-wrapper">
+                    <select id="sort-select" class="custom-select" aria-label="Sort products">
+                        <option value="name-asc">Name (A-Z)</option>
+                        <option value="name-desc">Name (Z-A)</option>
+                        <option value="price-asc">Price: Low to High</option>
+                        <option value="price-desc">Price: High to Low</option>
+                        <option value="qty-asc">Stock: Low to High</option>
+                        <option value="qty-desc">Stock: High to Low</option>
+                        <option value="low-stock-first">Low Stock First</option>
+                    </select>
+                </div>
+
+                <button type="button" class="btn btn-secondary btn-icon-only" id="btn-clear-filters" title="Reset Filters" aria-label="Reset Filters">
+                    <i class="fa-solid fa-filter-circle-xmark"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- Main Product Listing -->
+        <section class="listing-section" aria-labelledby="products-heading">
+            <div class="section-header">
+                <div class="header-title-wrap">
+                    <h2 id="products-heading">Product Inventory</h2>
+                    <span id="record-count" class="count-badge">0 items</span>
+                </div>
+                <div class="view-toggle-wrap">
+                    <button type="button" class="view-toggle-btn active" id="view-table-btn" title="Table View" aria-label="Table View">
+                        <i class="fa-solid fa-table-list"></i>
+                    </button>
+                    <button type="button" class="view-toggle-btn" id="view-grid-btn" title="Grid Cards View" aria-label="Grid Cards View">
+                        <i class="fa-solid fa-grip"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Desktop / Large Table View -->
+            <div class="table-responsive" id="table-container">
+                <table id="desktop-table" class="product-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">SKU</th>
+                            <th scope="col">Product Name</th>
+                            <th scope="col">Category</th>
+                            <th scope="col" class="text-right">Price</th>
+                            <th scope="col" class="text-center">Stock Level</th>
+                            <th scope="col" class="text-center">Status</th>
+                            <th scope="col" class="text-right actions-col">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="products-tbody">
+                        <!-- Rows rendered via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Mobile & Grid Cards View -->
+            <div id="mobile-cards" class="card-list hidden">
+                <!-- Cards rendered via JavaScript -->
+            </div>
+
+            <!-- Empty State View -->
+            <div id="empty-state" class="empty-state hidden">
+                <div class="empty-icon-wrap">
+                    <i class="fa-solid fa-box-open empty-icon"></i>
+                </div>
+                <h3>No Products Found</h3>
+                <p>No inventory items match your current filters. Add a new item or clear search filters to continue.</p>
+                <div class="empty-actions">
+                    <button type="button" class="btn btn-primary" id="btn-add-from-empty">
+                        <i class="fa-solid fa-plus"></i> Add Product
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Add/Edit Product Modal Dialog -->
+    <dialog id="product-modal" class="modal" aria-labelledby="modal-title">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Add New Product</h3>
+                <button type="button" class="icon-btn" id="btn-close-modal" aria-label="Close Modal">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <form id="product-form" novalidate>
+                <div class="modal-body">
+                    <input type="hidden" id="edit-product-id">
+                    
+                    <div class="form-group">
+                        <label for="product-name">Product Name <span class="required">*</span></label>
+                        <input type="text" id="product-name" name="name" required placeholder="e.g. Ergonomic Office Chair" autocomplete="off">
+                        <span class="error-msg" id="error-name"></span>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="product-sku">SKU / Code <span class="required">*</span></label>
+                            <input type="text" id="product-sku" name="sku" required placeholder="e.g. FUR-CHR-01" autocomplete="off">
+                            <span class="error-msg" id="error-sku"></span>
+                        </div>
+                        <div class="form-group">
+                            <label for="product-category">Category <span class="required">*</span></label>
+                            <input type="text" id="product-category" name="category" list="category-datalist" required placeholder="e.g. Furniture" autocomplete="off">
+                            <datalist id="category-datalist">
+                                <option value="Electronics">
+                                <option value="Furniture">
+                                <option value="Office Supplies">
+                                <option value="Accessories">
+                                <option value="Storage & Org">
+                            </datalist>
+                            <span class="error-msg" id="error-category"></span>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="product-price">Unit Price ($) <span class="required">*</span></label>
+                            <input type="number" id="product-price" name="price" required min="0" step="0.01" placeholder="0.00">
+                            <span class="error-msg" id="error-price"></span>
+                        </div>
+                        <div class="form-group">
+                            <label for="product-quantity">Quantity in Stock <span class="required">*</span></label>
+                            <input type="number" id="product-quantity" name="quantity" required min="0" step="1" placeholder="0">
+                            <span class="error-msg" id="error-quantity"></span>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="product-threshold">Low Stock Alert Threshold</label>
+                            <input type="number" id="product-threshold" name="threshold" min="0" step="1" placeholder="5" value="5">
+                            <small class="field-hint">Triggers an alert when quantity is &le; this value.</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="product-notes">Notes / Location</label>
+                            <input type="text" id="product-notes" name="notes" placeholder="e.g. Aisle 3, Shelf B">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="btn-cancel-modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="btn-save-product">
+                        <i class="fa-solid fa-floppy-disk"></i> Save Product
+                    </button>
+                </div>
+            </form>
+        </div>
+    </dialog>
+
+    <!-- Delete Confirmation Modal Dialog -->
+    <dialog id="delete-modal" class="modal modal-dialog-delete" aria-labelledby="delete-modal-title">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="delete-modal-title">Delete Product</h3>
+                <button type="button" class="icon-btn" id="btn-close-delete-modal" aria-label="Close dialog">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body text-center">
+                <div class="delete-icon-circle">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <p class="delete-prompt">Are you sure you want to delete <strong id="delete-product-name" class="danger-name"></strong>?</p>
+                <p class="delete-subtext">This product will be permanently removed from your inventory records.</p>
+            </div>
+            <div class="modal-footer justify-center">
+                <button type="button" class="btn btn-secondary" id="btn-cancel-delete">Cancel</button>
+                <button type="button" class="btn btn-danger" id="btn-confirm-delete">
+                    <i class="fa-solid fa-trash-can"></i> Delete
+                </button>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- Application Script -->
+    <script src="app.js" defer></script>
+</body>
+</html>
